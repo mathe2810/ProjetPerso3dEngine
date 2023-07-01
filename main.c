@@ -58,6 +58,43 @@ int ** loadMapRand()
     return tabRenvoi;
 }
 
+
+void mouseMvmtHorizontale(int mousePosX,double *fTheta)
+{
+    if(mousePosX<mouse_x)
+    {
+        *fTheta+=0.05f;
+        return;
+    }
+    else if(mousePosX>mouse_x)
+    {
+        *fTheta-=0.05f;
+        return;
+    }
+    else
+    {
+        return;
+    }
+}
+
+void mouseMvmtVerticale(int mousePosY,double *fTheta)
+{
+    if(mousePosY<mouse_y)
+    {
+        *fTheta+=0.05f;
+        return;
+    }
+    else if(mousePosY>mouse_y)
+    {
+        *fTheta-=0.05f;
+        return;
+    }
+    else
+    {
+        return;
+    }
+}
+
 int loadMap()
 {
     FILE *fp=NULL;
@@ -133,16 +170,24 @@ void MultiplicationMatrix(t_Vector3D *vector1,t_Vector3D *vector2, double projec
     }
 }
 
+void MultiplicationMatrixForRotation(t_Vector3D *vector1,t_Vector3D *vector2, double projectionMatrix[4][4])
+{
+    vector2->x=vector1->x*projectionMatrix[0][0]+vector1->y*projectionMatrix[1][0]+vector1->z*projectionMatrix[2][0]+projectionMatrix[3][0];
+    vector2->y=vector1->x*projectionMatrix[0][1]+vector1->y*projectionMatrix[1][1]+vector1->z*projectionMatrix[2][1]+projectionMatrix[3][1];
+    vector2->z=vector1->x*projectionMatrix[0][2]+vector1->y*projectionMatrix[1][2]+vector1->z*projectionMatrix[2][2]+projectionMatrix[3][2];
+    double w=vector1->x*projectionMatrix[0][3]+vector1->y*projectionMatrix[1][3]+vector1->z*projectionMatrix[2][3]+projectionMatrix[3][3];
+
+}
+
 
 void rotationMatrixCube(t_Vector3D *rotatedVector,double matRotz[4][4],double matRotx[4][4],double matRoty[4][4],t_Vector3D *cube)
 {
     for(int i=0;i<8;i++)
     {
-        MultiplicationMatrix(&cube[i],&rotatedVector[i],matRotz);
-        MultiplicationMatrix(&rotatedVector[i],&rotatedVector[i],matRotx);
-        MultiplicationMatrix(&rotatedVector[i],&rotatedVector[i],matRoty);
+        MultiplicationMatrixForRotation(&cube[i],&rotatedVector[i],matRotz);
+        MultiplicationMatrixForRotation(&rotatedVector[i],&rotatedVector[i],matRoty);
+        MultiplicationMatrixForRotation(&rotatedVector[i],&rotatedVector[i],matRotx);
     }
-
 }
 
 void rotationMatrixTriangle(t_Vector3D *rotatedVector,double matRotz[4][4],double matRotx[4][4],double matRoty[4][4],t_Vector3D *triangle)
@@ -150,15 +195,8 @@ void rotationMatrixTriangle(t_Vector3D *rotatedVector,double matRotz[4][4],doubl
     for(int i=0;i<5;i++)
     {
         MultiplicationMatrix(&triangle[i], &rotatedVector[i],  matRotz);
-    }
-    for(int i=0;i<5;i++)
-    {
-        MultiplicationMatrix(&rotatedVector[i],&rotatedVector[i],matRotx);
-    }
-
-    for(int i=0;i<5;i++)
-    {
         MultiplicationMatrix(&rotatedVector[i],&rotatedVector[i],matRoty);
+        MultiplicationMatrix(&rotatedVector[i],&rotatedVector[i],matRotx);
     }
 }
 
@@ -168,13 +206,7 @@ void rotationMatrixAxes(t_Vector3D *rotatedVector,double matRotz[4][4],double ma
     for(int i=0;i<4;i++)
     {
         MultiplicationMatrix(&axes[i],&rotatedVector[i],matRotz);
-    }
-    for(int i=0;i<4;i++)
-    {
         MultiplicationMatrix(&rotatedVector[i],&rotatedVector[i],matRoty);
-    }
-    for(int i=0;i<4;i++)
-    {
         MultiplicationMatrix(&rotatedVector[i],&rotatedVector[i],matRotx);
     }
 }
@@ -310,7 +342,6 @@ int main() {
     char renvoi[60];
     int iteration=0,nbAle;
     srand(time(NULL));
-    show_mouse(screen);
     set_keyboard_rate(1000,100);
     float a=(float)(SCREEN_H)/SCREEN_W;
     double f= 1/ tanf(FOV*PI*0.5/180);
@@ -325,6 +356,8 @@ int main() {
     float scalingFactorY=1;
     float scalingFactorZ=1;
 
+    int mouseAvantX=0;
+    int mouseAvantY=0;
 
     t_Vector3D cube[8] = {
             { 1.0f, -1.0f, -1.0f },
@@ -369,7 +402,6 @@ int main() {
     projectionMatrix[2][2]=zFar/(zFar-zNear);
     projectionMatrix[3][2]=(-zFar*zNear)/(zFar-zNear);
     projectionMatrix[2][3]=1;
-    projectionMatrix[3][3]=0;
 
 
     t_Vector3D translatedVector[8]={0};
@@ -424,11 +456,11 @@ int main() {
 
 
 
-        matRoty[0][0]=cos(fThetaY);
-        matRoty[0][2]=-sin(fThetaY);
+        matRoty[0][0]=cos(fThetaY*0.25);
+        matRoty[0][2]=-sin(fThetaY*0.25);
         matRoty[1][1]=1;
-        matRoty[2][0]=sin(fThetaY);
-        matRoty[2][2]=cos(fThetaY);
+        matRoty[2][0]=sin(fThetaY*0.25);
+        matRoty[2][2]=cos(fThetaY*0.25);
         matRoty[3][3]=1;
 
 
@@ -454,13 +486,7 @@ int main() {
 
         rotationMatrixAxes(rotatedVector4,matRotz,matRotx,matRoty,axes);
 
-        rotationMatrixAxes(rotatedVector5,matRotz,matRotx,matRoty,sol);
 
-
-        if(key[KEY_W])
-        {
-            fThetaX+=0.001f;
-        }
         if(key[KEY_E])
         {
             fThetaZ+=0.001f;
@@ -469,31 +495,24 @@ int main() {
         {
             fThetaY+=0.001f;
         }
+        if(key[KEY_W])
+        {
+            fThetaX+=0.001f;
+        }
 
 
         for(int i=0;i<8;i++)
         {
             MultiplicationMatrix(&rotatedVector[i],&translatedVector[i],matTranslation);
             MultiplicationMatrix(&translatedVector[i],&scalingVector[i],matScaling);
+            MultiplicationMatrix(&scalingVector[i],&projectedVector[i],projectionMatrix);
         }
         for(int i=0;i<4;i++)
         {
             translatedVector4[i]=rotatedVector4[i];
             translatedVector4[i].z+=(5.0f+rotatedVector4[i].z);
-
-            translatedVector5[i]=rotatedVector5[i];
-            translatedVector5[i].z+=(5.0f+rotatedVector5[i].z);
-        }
-        for(int i=0;i<8;i++)
-        {
-            MultiplicationMatrix(&scalingVector[i],&projectedVector[i],projectionMatrix);
-            //MultiplicationMatrix(&rotatedVector2[i],&projectedVector2[i],projectionMatrix);
         }
 
-        for(int i=0;i<5;i++)
-        {
-            //MultiplicationMatrix(&rotatedVector3[i],&projectedVector3[i],projectionMatrix);
-        }
 
         for(int i=0;i<4;i++)
         {
@@ -505,24 +524,12 @@ int main() {
         {
             projectedVector[i].x=(projectedVector[i].x+1)*SCREEN_W/2;
             projectedVector[i].y=(projectedVector[i].y+1)*SCREEN_H/2;
-
-            projectedVector2[i].x=(projectedVector2[i].x+1)*SCREEN_W/2;
-            projectedVector2[i].y=(projectedVector2[i].y+1)*SCREEN_H/2;
-        }
-
-        for(int i=0;i<5;i++)
-        {
-            projectedVector3[i].x=(projectedVector3[i].x+1)*SCREEN_W/2;
-            projectedVector3[i].y=(projectedVector3[i].y+1)*SCREEN_H/2;
         }
 
         for(int i=0;i<4;i++)
         {
             projectedVector4[i].x=(projectedVector4[i].x+1)*SCREEN_W/2;
             projectedVector4[i].y=(projectedVector4[i].y+1)*SCREEN_H/2;
-
-            projectedVector5[i].x=(projectedVector5[i].x+1)*SCREEN_W/2;
-            projectedVector5[i].y=(projectedVector5[i].y+1)*SCREEN_H/2;
         }
 
 
@@ -631,6 +638,14 @@ int main() {
         if(key[KEY_P])
         {
             scalingFactorZ-=0.01f;
+        }
+        if(mouse_b==1)
+        {
+            mouseAvantX=mouse_x;
+            mouseAvantY=mouse_y;
+            rest(1);
+            mouseMvmtHorizontale(mouseAvantX,&fThetaX);
+            mouseMvmtVerticale(mouseAvantY,&fThetaY);
         }
         blit(buffer,screen,0,0,0,0,SCREEN_W,SCREEN_H);
         iteration++;
