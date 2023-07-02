@@ -119,7 +119,7 @@ int loadMap()
         }
         printf("\n");
     }
-    return tabRenvoi;
+    return (int) tabRenvoi;
 }
 
 void displayMiniMap(t_player player, int **map,BITMAP *buffer)
@@ -452,9 +452,6 @@ int main() {
         matRotx[2][1]=-sin(fThetaX*0.5);
         matRotx[2][2]=cos(fThetaX*0.5);
         matRotx[3][3]=1;
-
-
-
 
         matRoty[0][0]=cos(fThetaY*0.25);
         matRoty[0][2]=-sin(fThetaY*0.25);
